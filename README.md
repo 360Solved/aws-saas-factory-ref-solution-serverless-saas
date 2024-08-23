@@ -37,6 +37,28 @@ Figure 1 provides a high-level representation of the baseline architecture that 
 
 Run the below script to deploy the required component. Replace the "test@test.com" email address with yours. This email address is used to setup an admin user in the architecture.
 
+1. Create a Python VENV 
+
+2. pip install git-remote-codecommit   (CREATE REQUIREMENTS.TXT)
+
+3. If you have issues running codeCommit "locks" try with this configuration
+   git config --global http.postBuffer 157286400                                 
+   git config --global http.lowSpeedLimit 0
+   git config --global http.lowSpeedTime 999999
+
+4. Open Docker if you're going to run SAM BUILD using a container 
+
+5. If you have errors like this one 
+   This CDK CLI is not compatible with the CDK library used by your application. Please upgrade the CLI to the latest version.
+   (Cloud assembly schema version mismatch: Maximum schema version supported is 36.0.0, but found 36.0.14) 
+
+Run
+```bash
+npm install -g aws-cdk@latest
+```
+
+5. Run
+
 ```bash
 . deployment.sh test@test.com
 ```
