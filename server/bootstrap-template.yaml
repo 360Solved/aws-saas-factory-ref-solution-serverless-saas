@@ -146,13 +146,13 @@ Resources:
         AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn         
         AdminApiGatewayApi: !GetAtt APIs.Outputs.AdminApiGatewayApi
 
-  #Create cloudfront and s3 for UI Cde
+  #Create cloudfront and s3 for UI Cde   -  Need rework to our own Applications (SAUL)
   UserInterface:
     Type: AWS::Serverless::Application
     Properties:
       Location: nested_templates/bootstrap/userinterface.yaml
   
-  #setup custom resources
+  #setup custom resources  
   CustomResources:
     Type: AWS::Serverless::Application
     DependsOn: APIs    
