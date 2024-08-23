@@ -1,36 +1,34 @@
 #!/bin/bash -e
 
-# Create CodeCommit repo
-REGION=$(aws configure get region)
-if ! aws codecommit get-repository --repository-name aws-saas-factory-ref-serverless-saas; then
-  echo "aws-saas-factory-ref-serverless-saas codecommit repo is not present, will create one now"
-  CREATE_REPO=$(aws codecommit create-repository --repository-name aws-saas-factory-ref-serverless-saas --repository-description "Serverless saas reference architecture repository")
-  echo "$CREATE_REPO"
-fi
+# # Create CodeCommit repo
+# REGION=$(aws configure get region)
+# if ! aws codecommit get-repository --repository-name aws-saas-factory-ref-serverless-saas; then
+#   echo "aws-saas-factory-ref-serverless-saas codecommit repo is not present, will create one now"
+#   CREATE_REPO=$(aws codecommit create-repository --repository-name aws-saas-factory-ref-serverless-saas --repository-description "Serverless saas reference architecture repository")
+#   echo "$CREATE_REPO"
+# fi
 
-REPO_URL="codecommit::${REGION}://aws-saas-factory-ref-serverless-saas"
-if ! git remote add cc "$REPO_URL"; then
-  echo "Setting url to remote cc"
-  git remote set-url cc "$REPO_URL"
-fi
-git push cc "$(git branch --show-current)":main
-# git push --set-upstream cc main
+# REPO_URL="codecommit::${REGION}://aws-saas-factory-ref-serverless-saas"
+# if ! git remote add cc "$REPO_URL"; then
+#   echo "Setting url to remote cc"
+#   git remote set-url cc "$REPO_URL"
+# fi
+# git push cc "$(git branch --show-current)":main
+# # git push --set-upstream cc main
 
-# enable yarn
-corepack enable || npm install --global yarn
 
-# Deploying CI/CD pipeline
+# ############## Deploying CI/CD pipeline ################# #
 cd server/TenantPipeline/ || exit # stop execution if cd fails
-yarn install && yarn build
-# npm install && npm run build
-cdk bootstrap
-
-if ! cdk deploy; then
-  exit 1
-fi
-
+# yarn install && yarn build
+#npm install && npm run build
+#cdk bootstrap
+#if ! cdk deploy; then
+#  exit 1
+#fi
 # Deploying bootstrap
 cd ../
+
+
 
 DEFAULT_SAM_S3_BUCKET=$(grep s3_bucket samconfig-bootstrap.toml | cut -d'=' -f2 | cut -d \" -f2)
 echo "aws s3 ls s3://${DEFAULT_SAM_S3_BUCKET}"
