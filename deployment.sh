@@ -1,34 +1,43 @@
 #!/bin/bash -e
 
 # # Create CodeCommit repo
-# REGION=$(aws configure get region)
-# if ! aws codecommit get-repository --repository-name aws-saas-factory-ref-serverless-saas; then
-#   echo "aws-saas-factory-ref-serverless-saas codecommit repo is not present, will create one now"
-#   CREATE_REPO=$(aws codecommit create-repository --repository-name aws-saas-factory-ref-serverless-saas --repository-description "Serverless saas reference architecture repository")
-#   echo "$CREATE_REPO"
-# fi
+REGION=$(aws configure get region)
 
-# REPO_URL="codecommit::${REGION}://aws-saas-factory-ref-serverless-saas"
-# if ! git remote add cc "$REPO_URL"; then
-#   echo "Setting url to remote cc"
-#   git remote set-url cc "$REPO_URL"
-# fi
-# git push cc "$(git branch --show-current)":main
-# # git push --set-upstream cc main
+# Intenta obtener el repositorio y guarda el resultado
+REPO_INFO=$(aws codecommit get-repository --repository-name saas-factory 2>&1)
+
+# Si el comando de obtener el repositorio falla
+if [[ -z "$REPO_INFO" ]]; then
+  echo "saas-factory codecommit repo is not present, will create one now"
+  CREATE_REPO=$(aws codecommit create-repository --repository-name saas-factory --repository-description "Serverless saas factory")
+  echo "$CREATE_REPO"
+  
+  REPO_URL="codecommit::${REGION}://saas-factory"
+  if ! git remote add cc "$REPO_URL"; then
+    echo "Setting url to remote cc"
+    git remote set-url cc "$REPO_URL"
+  fi
+else
+  echo "saas-factory codecommit repo already exists."
+  echo "Repository details: $REPO_INFO"
+fi
+  git push cc "$(git branch --show-current)":main
+  #git push --set-upstream cc main
 
 
-# ############## Deploying CI/CD pipeline ################# #
+
+############## Deploying CI/CD pipeline ################# #
 cd server/TenantPipeline/ || exit # stop execution if cd fails
 # yarn install && yarn build
-#npm install && npm run build
-#cdk bootstrap
-#if ! cdk deploy; then
-#  exit 1
-#fi
+npm install && npm run build
+
+cdk bootstrap
+if ! cdk deploy; then
+  exit 1
+fi
+
 # Deploying bootstrap
 cd ../
-
-
 
 DEFAULT_SAM_S3_BUCKET=$(grep s3_bucket samconfig-bootstrap.toml | cut -d'=' -f2 | cut -d \" -f2)
 echo "aws s3 ls s3://${DEFAULT_SAM_S3_BUCKET}"
@@ -49,6 +58,7 @@ if ! aws s3 ls "s3://${DEFAULT_SAM_S3_BUCKET}"; then
   ex -sc '%s/s3_bucket = .*/s3_bucket = \"'"$SAM_S3_BUCKET"'\"/|x' samconfig-bootstrap.toml
 fi
 
+#Open docker to run this 
 sam build -t bootstrap-template.yaml --use-container --region="$REGION"
 sam deploy --config-file samconfig-bootstrap.toml --region="$REGION" --parameter-overrides AdminEmailParameter="$1"
 
@@ -57,7 +67,8 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # Start CI/CD pipepline which loads tenant stack
-aws codepipeline start-pipeline-execution --name serverless-saas-pipeline
+START_PIPELINE=$(aws codepipeline start-pipeline-execution --name serverless-saas-pipeline)
+  echo "$START_PIPELINE"
 
 ADMIN_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppBucket'].Value" --output text)
 APP_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AppBucket'].Value" --output text)
@@ -70,6 +81,16 @@ LANDING_APP_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='
 ADMIN_APPCLIENTID=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminUserPoolClientId'].Value" --output text)
 ADMIN_USERPOOLID=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminUserPoolId'].Value" --output text)
 ADMIN_APIGATEWAYURL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminApiGatewayUrl'].Value" --output text)
+
+echo $ADMIN_SITE_BUCKET
+echo $APP_SITE_BUCKET
+echo $LANDING_APP_SITE_BUCKET
+echo $ADMIN_SITE_URL
+echo $APP_SITE_URL
+echo $LANDING_APP_SITE_URL
+echo $ADMIN_APPCLIENTID
+echo $ADMIN_USERPOOLID
+echo $ADMIN_APIGATEWAYURL
 
 # Configuring admin UI
 echo "aws s3 ls s3://${ADMIN_SITE_BUCKET}"
@@ -111,8 +132,8 @@ const awsmobile = {
 export default awsmobile;
 EoF
 
-yarn install && yarn build
-# npm install --legacy-peer-deps && npm run build
+# yarn install && yarn build
+npm install --legacy-peer-deps && npm run build
 
 echo "aws s3 sync --delete --cache-control no-store dist s3://${ADMIN_SITE_BUCKET}"
 aws s3 sync --delete --cache-control no-store dist "s3://${ADMIN_SITE_BUCKET}"
@@ -153,8 +174,8 @@ export const environment = {
 };
 EoF
 
-yarn install && yarn build
-# npm install --legacy-peer-deps && npm run build
+# yarn install && yarn build
+npm install --legacy-peer-deps && npm run build
 
 echo "aws s3 sync --delete --cache-control no-store dist s3://${APP_SITE_BUCKET}"
 aws s3 sync --delete --cache-control no-store dist "s3://${APP_SITE_BUCKET}"
@@ -196,8 +217,8 @@ export const environment = {
 };
 EoF
 
-yarn install && yarn build
-# npm install --legacy-peer-deps && npm run build
+# yarn install && yarn build
+npm install --legacy-peer-deps && npm run build
 
 echo "aws s3 sync --delete --cache-control no-store dist s3://${LANDING_APP_SITE_BUCKET}"
 aws s3 sync --delete --cache-control no-store dist "s3://${LANDING_APP_SITE_BUCKET}"
