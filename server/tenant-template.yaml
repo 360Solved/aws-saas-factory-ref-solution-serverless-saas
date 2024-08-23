@@ -37,7 +37,7 @@ Parameters:
     Description: "Name of the bootstrap stack"
   LambdaReserveConcurrency:
     Type: Number
-    Default: 20
+    Default: 5
     Description: "Reserve concurrency for lambda function. You can customize this on per tenant basis, if needed, by storing in the tenant table"
   LambdaCanaryDeploymentPreference:
     Type: String
